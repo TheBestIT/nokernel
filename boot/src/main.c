@@ -1,43 +1,49 @@
 #include <stdint.h>
 
-typedef uint64_t    EFI_STATUS;
-typedef void       *EFI_HANDLE;
-typedef uint16_t    CHAR16;
+#include "efiapi/Base.h"
+#include "efiapi/BootServices.h"
+#include "efiapi/Protocols.h"
+#include "efiapi/Errors.h"
 
-typedef struct { 
-    uint64_t Signature;
-    uint32_t Revision, HeaderSize, CRC32, Reserved;
-} EFI_TABLE_HEADER;
+#include "guids/guids.h"
+#include "console/console.h"
+#include "disk/disk.h"
 
-struct TextOut;
-typedef EFI_STATUS (*EFI_TEXT_STRING)(struct TextOut*, CHAR16*);
-typedef EFI_STATUS (*EFI_TEXT_CLEAR)(struct TextOut*);
+/*
+Call LibOpenRoot to get the reference to the boot device root
+*/
 
-typedef struct TextOut {
-    void *Reset;
-    EFI_TEXT_STRING OutputString;
-    void *TestString, *QueryMode, *SetMode, *SetAttrib;
-    EFI_TEXT_CLEAR ClearScreen;
-    void *SetCursorPosition, *EnableCursor, *Mode;
-} EFI_TEXT_OUT_PROTOCOL;
-
-typedef struct {
-    EFI_TABLE_HEADER Hdr;
-    CHAR16      *FirmwareVendor;
-    uint32_t     FirmwareRevision;
-    EFI_HANDLE ConsoleInHandle; void *ConIn;
-    EFI_HANDLE ConsoleOutHandle; EFI_TEXT_OUT_PROTOCOL *ConOut;
-    EFI_HANDLE StandardErrorHandle; void *StdErr;
-    void *RuntimeServices;
-    void *BootServices;
-    uint64_t NumberOfTableEntries;
-    void *ConfigurationTable;
-} EFI_SYSTEM_TABLE;
+typedef EFI_LOADED_IMAGE_PROTOCOL EFI_LOADED_IMAGE;
 
 EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *st) {
-    st->ConOut->ClearScreen(st->ConOut);
-    st->ConOut->OutputString(st->ConOut, u"Hello, World!\r\n");
-    st->ConOut->OutputString(st->ConOut, st->FirmwareVendor);
+    EFI_BOOT_SERVICES *BS = st->BootServices;
+
+    EFI_LOADED_IMAGE *loadedImage;
+    EFI_STATUS err;
+    CHAR16 uuid[37];
+
+    ClearScreen(st);
+    Print(st, u"Hello, EFI!\r\n");
+    Print(st, st->FirmwareVendor);
+    Print(st, u"\r\n");
+
+    // Load Boot Image
+    err = BS->OpenProtocol(image, &gEfiLoadedImageProtocolGuid, (void **)&loadedImage,
+                            image, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (EFI_ERROR(err)) {
+        Print(st, u"Error while opening image protocol\r\n");
+        goto out;
+    }
+
+    if (GetDiskPartUUID(st, loadedImage->DeviceHandle, uuid) == EFI_SUCCESS) {
+        Print(st, u"Disk UUID: ");
+        Print(st, uuid);
+        Print(st, u"\n\r");
+    }
+
+    err = EFI_SUCCESS;
+out:
+    BS->CloseProtocol(image, &gEfiLoadedImageProtocolGuid, image, NULL);
     for (;;) __asm__ volatile ("hlt");
-    return 0;
+    return err;
 }
