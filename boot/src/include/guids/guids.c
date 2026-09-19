@@ -12,6 +12,9 @@ EFI_GUID gEfiGraphicsOutputProtocolGuid =
 EFI_GUID gEfiDevicePathProtocolGuid =
     {0x09576e91, 0x6d3f, 0x11d2, {0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b}};
 
+EFI_GUID gEfiFileInfoGuid =
+    {0x09576e92, 0x6d3f, 0x11d2, {0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b}};
+
 EFI_DEVICE_PATH_PROTOCOL *DevicePathFromHandle(EFI_BOOT_SERVICES *bs, EFI_HANDLE handle) {
     EFI_DEVICE_PATH_PROTOCOL *devicePath;
     if (EFI_ERROR(bs->HandleProtocol(handle, &gEfiDevicePathProtocolGuid, (void **)&devicePath))) {

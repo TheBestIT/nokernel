@@ -37,3 +37,21 @@ EFI_STATUS GetDiskPartUUID(EFI_SYSTEM_TABLE *st, EFI_HANDLE handle, CHAR16 uuid[
     }
     return EFI_NOT_FOUND;
 }
+
+EFI_STATUS LibOpenRoot(EFI_SYSTEM_TABLE *st, EFI_HANDLE DeviceHandle, EFI_FILE_PROTOCOL **file) {
+    EFI_STATUS status;
+    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *volume;
+
+    status = st->BootServices->HandleProtocol(
+        DeviceHandle,
+        &gEfiSimpleFileSystemProtocolGuid,
+        (void **)&volume
+    );
+
+    if (!EFI_ERROR(status)) {
+        status = volume->OpenVolume(volume, file);
+        return status;
+    }
+
+    return EFI_LOAD_ERROR;
+}

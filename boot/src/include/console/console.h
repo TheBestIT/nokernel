@@ -5,6 +5,7 @@
 
 void ClearScreen(EFI_SYSTEM_TABLE *st);
 void Print(EFI_SYSTEM_TABLE *st, CHAR16 *string);
+void PrintHex(EFI_SYSTEM_TABLE *st, uint64_t v);
 
 void GuidToString(CHAR16 out[37], const EFI_GUID *guid);
 
