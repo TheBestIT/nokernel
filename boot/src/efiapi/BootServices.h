@@ -129,6 +129,13 @@ typedef EFI_STATUS (*EFI_SET_WATCHDOG_TIMER) (
     CHAR16 *WatchdogData
 );
 
+// 7.3.16: EFI_BOOT_SERVICES.LocateProtocol()
+typedef EFI_STATUS (*EFI_LOCATE_PROTOCOL) (
+    IN EFI_GUID *Protocol,
+    IN void     *Registration,
+    OUT void    **Interface
+);
+
 // From UEFI Spec 4.4.1: EFI_BOOT_SERVICES
 typedef struct {
     EFI_TABLE_HEADER Hdr;
@@ -170,7 +177,12 @@ typedef struct {
     // Open and Close Protocol Services
     EFI_OPEN_PROTOCOL OpenProtocol;
     EFI_CLOSE_PROTOCOL CloseProtocol;
-    void* OpenProtocolInformation;
+    void *OpenProtocolInformation;
+
+    // Library Services
+    void *ProtocolsPerHandle, *LocateHandleBuffer;
+    EFI_LOCATE_PROTOCOL LocateProtocol;
+    void *InstallMultipleProtocolInterfaces, *UninstallMultipleProtocolInterfaces;
 
 } EFI_BOOT_SERVICES;
 

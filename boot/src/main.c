@@ -5,11 +5,15 @@
 #include "efiapi/Protocols.h"
 #include "efiapi/Errors.h"
 #include "efiapi/Filesystem.h"
+#include "efiapi/GOP.h"
 
 #include "guids/guids.h"
 #include "console/console.h"
 #include "disk/disk.h"
 #include "boot/boot.h"
+
+#include "shared/boot/info.h"
+#include "shared/libs/bitmap.h"
 
 uint8_t ELF_SIGNATURE[6] = {0x7F, 0x45, 0x4C, 0x46, 0x02, 0x01};
 
@@ -122,19 +126,47 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *st) {
         __builtin_memcpy(destination, (uint8_t *)raw + p->p_offset, p->p_filesz);
     }
 
-
     UINTN entryVirtual  = ehdr->e_entry;
     UINTN entryPhysical = physBase + (ehdr->e_entry - vmin);
 
+    Print(st, u"kernel.elf Entry Point: ");
     PrintHex(st, ehdr->e_entry);
-    Print(st, u"\n\r");
-    PrintHex(st, vmin);
-    Print(st, u"\n\r");
-    PrintHex(st, vmax - vmin);
-    Print(st, u"\n\r");
+    Print(st, u"\n\rkernel.elf Base Address: ");
     PrintHex(st, physBase);
     Print(st, u"\n\r");
 
+    // Load assets/terminus32x16.bmp
+    Print(st, u"Trying to load assets/terminus32x16.bmp\n\r");
+    Bitmap terminus32x16_font;
+    err = LoadBMPFile(st, root, u"\\assets\\terminus32x16.bmp", &terminus32x16_font);
+
+    if (EFI_ERROR(err)) {
+        Print(st, u"Error while loading assets/terminus32x16.bmp\n\r");
+        goto out;
+    }
+
+    Print(st, u"Font Base: ");
+    PrintHex(st, (uint64_t)terminus32x16_font.BaseAddress);
+    Print(st, u"\n\r");
+
+    // Init GOP
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = NULL;
+
+    err = BS->LocateProtocol(&gEfiGraphicsOutputProtocolGuid, NULL, (void **)&gop);
+    if (EFI_ERROR(err)) {
+        Print(st, u"Failed too Locate GraphicsOut Protocol\n\r");
+        goto out;
+    }
+
+    Print(st, u"Framebuffer: ");
+    PrintInt(st, gop->Mode->Info->HorizontalResolution);
+    Print(st, u"x");
+    PrintInt(st, gop->Mode->Info->VerticalResolution);
+    Print(st, u"\n\rFramebuffer Base Address: ");
+    PrintHex(st, gop->Mode->FrameBufferBase);
+    Print(st, u"\n\r");
+
+    // Allocate and populate bootinfo
     uint64_t bi_addr = 0;
     err = st->BootServices->AllocatePages(AllocateAnyPages, EfiLoaderData, 1, &bi_addr);
     if (EFI_ERROR(err)) goto out;
@@ -149,7 +181,15 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *st) {
     bi->kernel_virt = vmin;
     bi->kernel_size = vmax - vmin;
 
-    err = bootstrap(image, st, entryPhysical, bi);
+    bi->fb.base     = gop->Mode->FrameBufferBase;
+    bi->fb.size     = gop->Mode->FrameBufferSize;
+    bi->fb.width    = gop->Mode->Info->HorizontalResolution;
+    bi->fb.height   = gop->Mode->Info->VerticalResolution;
+    bi->fb.pitch    = gop->Mode->Info->PixelsPerScanLine;
+    bi->fb.format   = gop->Mode->Info->PixelFormat;
+    bi->font        = terminus32x16_font;
+
+    err = handover(image, st, entryPhysical, bi); // no return
 out:
     BS->CloseProtocol(image, &gEfiLoadedImageProtocolGuid, image, NULL);
     if (raw) BS->FreePool(raw);

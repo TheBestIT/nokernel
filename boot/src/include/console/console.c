@@ -21,6 +21,23 @@ void PrintHex(EFI_SYSTEM_TABLE *st, uint64_t v) {
     Print(st, buf);
 }
 
+void PrintInt(EFI_SYSTEM_TABLE *st, int64_t v) {
+    CHAR16 buf[21];         // 19 digits, the sign and the terminator
+    UINTN i = sizeof buf / sizeof buf[0];
+
+    // Use an unsigned magnitude. -INT64_MIN does not fit in int64_t.
+    uint64_t n = v < 0 ? 0 - (uint64_t)v : (uint64_t)v;
+
+    buf[--i] = 0;
+    do {
+        buf[--i] = u'0' + (CHAR16)(n % 10);
+        n /= 10;
+    } while (n);
+    if (v < 0) buf[--i] = u'-';
+
+    Print(st, &buf[i]);
+}
+
 void GuidToString(CHAR16 out[37], const EFI_GUID *guid) {
     static const CHAR16 hex[] = u"0123456789ABCDEF";
     UINTN i = 0;

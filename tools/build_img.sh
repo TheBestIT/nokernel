@@ -9,6 +9,7 @@ sgdisk -Z "$IMG" >/dev/null
 sgdisk -n 1:2048:0 -t 1:ef00 -c 1:"EFI System" "$IMG" >/dev/null
 
 mformat -i "$IMG@@$OFF" -F -v ESP ::
-mmd     -i "$IMG@@$OFF" ::/EFI ::/EFI/BOOT
+mmd     -i "$IMG@@$OFF" ::/assets ::/EFI ::/EFI/BOOT
 mcopy   -i "$IMG@@$OFF" build/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
 mcopy   -i "$IMG@@$OFF" build/kernel.elf ::/kernel.elf
+mcopy   -i "$IMG@@$OFF" assets/fonts/terminus32x16.bmp ::/assets/terminus32x16.bmp

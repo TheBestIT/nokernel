@@ -4,7 +4,7 @@ LLD   := $(shell command -v lld-link 2>/dev/null)
 BUILD := build
 ESP   := $(BUILD)/esp
 
-EFI_INCLUDES := -I boot/src/include -I boot/src
+EFI_INCLUDES := -I boot/src/include -I boot/src -I ./
 
 EFI_CFLAGS := -target x86_64-unknown-windows \
               -ffreestanding -fshort-wchar -mno-red-zone -nostdlib \
@@ -22,11 +22,13 @@ OVMF_CODE := $(BUILD)/ovmf/x64/code.fd
 CLANGXX := clang++
 LDLLD   := ld.lld
 
+
+KERNEL_INCLUDES := -I ./ -I kernel/include
 KERNEL_CXXFLAGS := -target x86_64-unknown-elf -std=c++20 \
                    -ffreestanding -fno-exceptions -fno-rtti \
                    -fno-stack-protector -fno-pic -mno-red-zone \
                    -mgeneral-regs-only -nostdlib \
-                   -Wall -Wextra -MMD -MP
+                   -Wall -Wextra -MMD -MP $(KERNEL_INCLUDES)
 
 KERNEL_LDSCRIPT := kernel/linker.ld
 KERNEL_LDFLAGS  := -nostdlib -static -T $(KERNEL_LDSCRIPT)
@@ -35,6 +37,11 @@ KERNEL_SRCS := $(shell find kernel -name '*.cpp')
 KERNEL_OBJS := $(patsubst kernel/%.cpp,$(BUILD)/kernel/%.o,$(KERNEL_SRCS))
 KERNEL_DEPS := $(KERNEL_OBJS:.o=.d)
 KERNEL_ELF  := $(BUILD)/kernel.elf
+
+# Shared library code. It links into the kernel with the kernel flags.
+LIB_SRCS := $(shell find lib -name '*.cpp')
+LIB_OBJS := $(patsubst lib/%.cpp,$(BUILD)/lib/%.o,$(LIB_SRCS))
+LIB_DEPS := $(LIB_OBJS:.o=.d)
 
 IMG := $(BUILD)/loader.img
 
@@ -76,10 +83,14 @@ $(BUILD)/boot/%.o: boot/src/%.c
 	@mkdir -p $(dir $@)
 	$(CLANG) $(EFI_CFLAGS) -c -o $@ $<
 
-$(KERNEL_ELF): $(KERNEL_OBJS) $(KERNEL_LDSCRIPT)
-	$(LDLLD) $(KERNEL_LDFLAGS) -o $@ $(KERNEL_OBJS)
+$(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS) $(KERNEL_LDSCRIPT)
+	$(LDLLD) $(KERNEL_LDFLAGS) -o $@ $(KERNEL_OBJS) $(LIB_OBJS)
 
 $(BUILD)/kernel/%.o: kernel/%.cpp
+	@mkdir -p $(dir $@)
+	$(CLANGXX) $(KERNEL_CXXFLAGS) -c -o $@ $<
+
+$(BUILD)/lib/%.o: lib/%.cpp
 	@mkdir -p $(dir $@)
 	$(CLANGXX) $(KERNEL_CXXFLAGS) -c -o $@ $<
 
@@ -97,9 +108,9 @@ $(OVMF_CODE):
 	bash tools/fetch_ovmf.sh
 
 clean:
-	rm -rf $(BUILD)/BOOTX64.EFI $(BUILD)/boot $(KERNEL_ELF) $(BUILD)/kernel $(ESP) $(IMG)
+	rm -rf $(BUILD)/BOOTX64.EFI $(BUILD)/boot $(KERNEL_ELF) $(BUILD)/kernel $(BUILD)/lib $(ESP) $(IMG)
 
 distclean: clean
 	rm -rf $(BUILD)
 
--include $(EFI_DEPS) $(KERNEL_DEPS)
+-include $(EFI_DEPS) $(KERNEL_DEPS) $(LIB_DEPS)

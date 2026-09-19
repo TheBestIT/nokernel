@@ -12,9 +12,15 @@ typedef uint16_t    CHAR16;
 typedef uint64_t    EFI_PHYSICAL_ADDRESS;
 typedef uint64_t    EFI_VIRTUAL_ADDRESS;
 
-#define NULL            ((void *) 0)
 #define EFI_ERROR(a)    (((INTN) a) < 0)
 #define EFIERR(a)       (0x8000000000000000 | a)
+#define IN
+#define OUT
+#define PAGE_SIZE 4096
+// masks the value (x) to the previous bound of the mask (a) eg. mask=8: 17 -> 16 
+#define ALIGN_DOWN(x,a) ((x) & ~((UINTN)(a)-1)) 
+// masks the value (x) to the next bound of the mask (a) eg. mask=8: 17 -> 24
+#define ALIGN_UP(x,a)   (((x) + (a)-1) & ~((UINTN)(a)-1))
 
 typedef struct {
     uint32_t Data1;

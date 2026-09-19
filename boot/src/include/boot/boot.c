@@ -1,6 +1,6 @@
 #include "boot.h"
 
-EFI_STATUS bootstrap(EFI_HANDLE image, EFI_SYSTEM_TABLE *st, UINTN physEntryAddress, bootinfo_t *bootInfo) {
+EFI_STATUS handover(EFI_HANDLE image, EFI_SYSTEM_TABLE *st, UINTN physEntryAddress, bootinfo_t *bootInfo) {
     st->BootServices->SetWatchdogTimer(0, 0, 0, 0);
 
     EFI_MEMORY_DESCRIPTOR *mmap = 0;
@@ -10,7 +10,7 @@ EFI_STATUS bootstrap(EFI_HANDLE image, EFI_SYSTEM_TABLE *st, UINTN physEntryAddr
     uint64_t stack = 0;
     if (EFI_ERROR(st->BootServices->AllocatePages(AllocateAnyPages, EfiLoaderData, 16, &stack)))
         return EFI_OUT_OF_RESOURCES;
-    uint64_t stack_top = (stack + 16 * 4096 - 16) & ~0xFULL;
+    uint64_t stackTop = (stack + 16 * 4096 - 16) & ~0xFULL;
 
     for (int attempt = 0; attempt < 3; ++attempt) {
         size = 0;
@@ -39,12 +39,12 @@ EFI_STATUS bootstrap(EFI_HANDLE image, EFI_SYSTEM_TABLE *st, UINTN physEntryAddr
     // "Abandon all hope, ye who enter here"
 
     __asm__ volatile (
-        "cli\n"
-        "movq %0, %%rsp\n"
-        "xorq %%rbp, %%rbp\n"
-        "callq *%1\n"
+        "cli\n" // Suspends interrupts
+        "movq %0, %%rsp\n" // Moves the top stack frame pointer (rsp register) to the start of the allocated stackTop
+        "xorq %%rbp, %%rbp\n" // Zeros out base stack frame pointer (rbp register)
+        "callq *%1\n" // Calls physEntryAddress with bootInfo as its first argument
         :
-        : "r"(stack_top), "r"(physEntryAddress), "D"(bootInfo)
+        : "r"(stackTop), "r"(physEntryAddress), "D"(bootInfo)
         : "memory"
     );
     __builtin_unreachable();
