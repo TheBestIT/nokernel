@@ -4,7 +4,7 @@
 #include "shared/boot/info.h"
 #include "shared/boot/framebuffer.h"
 
-#include "lib/include/common/memory.h"
+#include "lib/common/include/memory.h"
 
 class Framebuffer {
     public:

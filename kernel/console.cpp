@@ -5,7 +5,15 @@ Console::Console(Framebuffer *fb, font_t font) {
     this->font = font;
 }
 
+void Console::newline() {
+    this->x = 0;
+    this->y += this->font.CellHeight;
+    if (this->y / this->font.CellHeight > this->fb->getHeight() / this->font.CellHeight) this->clear();
+}
+
 void Console::print_char(char c) {
+    if (c == '\n') return this->newline();
+    
     uint32_t col = (uint8_t)c % this->font.CellsPerXAxis;
     uint32_t row = (uint8_t)c / this->font.CellsPerXAxis;
 
@@ -26,11 +34,8 @@ void Console::print_char(char c) {
     }
 
     this->x += this->font.CellWidth;
-    if (this->x / this->font.CellWidth > this->fb->getWidth() / this->font.CellWidth) {
-        this->x = 0;
-        this->y += this->font.CellHeight;
-        if (this->y / this->font.CellHeight > this->fb->getHeight() / this->font.CellHeight) this->clear();
-    }
+    if (this->x / this->font.CellWidth > this->fb->getWidth() / this->font.CellWidth) this->newline();
+    
 }
 
 void Console::clear() {
@@ -50,4 +55,16 @@ void Console::setBGColor(uint32_t color) {
 
 void Console::setFGColor(uint32_t color) {
     this->foregroundColor = color;
+}
+
+static void conout(char c, void *arg) {
+    ((Console *)arg)->print_char(c);
+}
+
+int kprintf(Console &console, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    const int ret = _vfctprintf(conout, &console, format, args);
+    va_end(args);
+    return ret;
 }

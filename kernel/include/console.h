@@ -3,17 +3,18 @@
 
 #include "kernel/include/dev/framebuffer.h"
 #include "kernel/include/lib/font.h"
+#include "lib/common/include/vsnprintf.h"
 
 class Console {
     public:
         Console(Framebuffer *fb, font_t font);
         void clear();
         void print(const char *str);
+        void print_char(char c);
         void setBGColor(uint32_t color);
         void setFGColor(uint32_t color);
     private:
-        void print_char(char c);
-
+        void newline();
         Framebuffer *fb;
         font_t font;
 
@@ -22,5 +23,7 @@ class Console {
         uint32_t x = 0;
         uint32_t y = 0;
 };
+
+int kprintf(Console &console, const char *format, ...);
 
 #endif // CONSOLE_H

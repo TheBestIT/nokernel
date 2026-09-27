@@ -15,6 +15,8 @@
 #include "shared/boot/info.h"
 #include "shared/libs/bitmap.h"
 
+#define BOOTLOADER_VERSION u"1.0.0"
+
 uint8_t ELF_SIGNATURE[6] = {0x7F, 0x45, 0x4C, 0x46, 0x02, 0x01};
 
 typedef EFI_LOADED_IMAGE_PROTOCOL EFI_LOADED_IMAGE;
@@ -28,7 +30,10 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *st) {
     void *raw = NULL;
 
     ClearScreen(st);
-    Print(st, u"Hello, EFI!\r\n");
+    Print(st, u"noLoader version ");
+    Print(st, BOOTLOADER_VERSION);
+    Print(st, u": The noKernel EFI bootloader\r\n");
+    Print(st, u"BIOS Vendor: ");
     Print(st, st->FirmwareVendor);
     Print(st, u"\r\n");
 

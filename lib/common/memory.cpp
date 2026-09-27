@@ -1,4 +1,4 @@
-#include "lib/include/common/memory.h"
+#include "include/memory.h"
 
 void bcopy(const void *src, void *dest, size_t length) {
     if (dest < src) {
