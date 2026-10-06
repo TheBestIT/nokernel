@@ -33,8 +33,12 @@ KERNEL_CXXFLAGS := -target x86_64-unknown-elf -std=c++20 \
 KERNEL_LDSCRIPT := kernel/linker.ld
 KERNEL_LDFLAGS  := -nostdlib -static -T $(KERNEL_LDSCRIPT)
 
+KERNEL_ASFLAGS := -target x86_64-unknown-elf -MMD -MP $(KERNEL_INCLUDES)
+
 KERNEL_SRCS := $(shell find kernel -name '*.cpp')
-KERNEL_OBJS := $(patsubst kernel/%.cpp,$(BUILD)/kernel/%.o,$(KERNEL_SRCS))
+KERNEL_ASM  := $(shell find kernel -name '*.S')
+KERNEL_OBJS := $(patsubst kernel/%.cpp,$(BUILD)/kernel/%.o,$(KERNEL_SRCS)) \
+               $(patsubst kernel/%.S,$(BUILD)/kernel/%.S.o,$(KERNEL_ASM))
 KERNEL_DEPS := $(KERNEL_OBJS:.o=.d)
 KERNEL_ELF  := $(BUILD)/kernel.elf
 
@@ -89,6 +93,10 @@ $(KERNEL_ELF): $(KERNEL_OBJS) $(LIB_OBJS) $(KERNEL_LDSCRIPT)
 $(BUILD)/kernel/%.o: kernel/%.cpp
 	@mkdir -p $(dir $@)
 	$(CLANGXX) $(KERNEL_CXXFLAGS) -c -o $@ $<
+
+$(BUILD)/kernel/%.S.o: kernel/%.S
+	@mkdir -p $(dir $@)
+	$(CLANG) $(KERNEL_ASFLAGS) -c -o $@ $<
 
 $(BUILD)/lib/%.o: lib/%.cpp
 	@mkdir -p $(dir $@)

@@ -24,6 +24,9 @@ class Console {
         uint32_t y = 0;
 };
 
+extern Console* g_console; // TODO: better global handlers
+
 int kprintf(Console &console, const char *format, ...);
+int kprintf(const char *format, ...);
 
 #endif // CONSOLE_H

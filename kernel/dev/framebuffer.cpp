@@ -2,7 +2,9 @@
 
 Framebuffer::Framebuffer(bootinfo_t *bootinfo) {
     this->fbDescriptor = &bootinfo->fb;
-    this->fb = (uint32_t*)bootinfo->fb.base;
+    // The UEFI page tables map memory 1:1, so the physical address is also the virtual address.
+    PhysAddress base = bootinfo->fb.base;
+    this->fb = (uint32_t*)(VirtAddress)base;
 }
 
 void Framebuffer::draw(uint32_t x, uint32_t y, uint32_t RGBD) {
@@ -11,7 +13,7 @@ void Framebuffer::draw(uint32_t x, uint32_t y, uint32_t RGBD) {
 }
 
 void Framebuffer::fill(uint32_t RGBD) {
-    uint32_memset(this->fb, RGBD, this->fbDescriptor->size);
+    Mem::uint32_memset(this->fb, RGBD, this->fbDescriptor->size);
 }
 
 uint32_t Framebuffer::getHeight() {

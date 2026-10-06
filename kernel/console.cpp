@@ -1,5 +1,7 @@
 #include "kernel/include/console.h"
 
+Console *g_console = nullptr;
+
 Console::Console(Framebuffer *fb, font_t font) {
     this->fb = fb;
     this->font = font;
@@ -65,6 +67,16 @@ int kprintf(Console &console, const char *format, ...) {
     va_list args;
     va_start(args, format);
     const int ret = _vfctprintf(conout, &console, format, args);
+    va_end(args);
+    return ret;
+}
+
+int kprintf(const char *format, ...) {
+    if (!g_console) return 0;
+
+    va_list args;
+    va_start(args, format);
+    const int ret = _vfctprintf(conout, g_console, format, args);
     va_end(args);
     return ret;
 }
