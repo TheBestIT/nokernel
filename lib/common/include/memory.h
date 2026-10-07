@@ -30,6 +30,4 @@ namespace Mem {
     #endif
 }
 
-
-
 #endif // COMMON_MEMORY_H

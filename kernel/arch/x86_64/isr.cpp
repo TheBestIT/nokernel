@@ -3,8 +3,6 @@
 ISR::ISR() {}
 ISR::~ISR() {}
 
-extern void panic(const char* exception);
-
 // ASM ISR handlers
 extern "C" void isr0(void);
 extern "C" void isr1(void);
@@ -109,9 +107,45 @@ void ISR::install() {
     SetIDTGate(31, isr31, 0x08, IDT_INTERRUPT_GATE);
 }
 
-extern "C" void interrupt_exception_handler(Registers *r) {
-    if (r->int_no < 32) kprintf("\nError %s", ExceptionMessages[r->int_no]);
-    else kprintf("Got an unknown exception %d", r->int_no);
+static inline uint64_t read_cr2() {
+    uint64_t v;
+    __asm__ volatile (
+        "mov %%cr2, %0"
+        : "=r"(v)
+    );
+    return v;
+}
 
-    for ( ; ; ) __asm__ volatile ("hlt");
+static inline uint64_t read_cr3() {
+    uint64_t v;
+    __asm__ volatile (
+        "mov %%cr3, %0"
+        : "=r"(v)
+    );
+    return v;
+}
+
+// Oops...
+[[noreturn]] void panic(Registers *r) {
+    static bool panic = false;
+    if (panic) for (; ;) __asm__ volatile ("hlt");
+    panic = true;
+    
+    const char *msg = r->int_no < 32 ? ExceptionMessages[r->int_no] : "Unknown";
+    kprintf("\nKernel panic - Not Syncing: %s (vector %lu, error %#lx)\n", msg, r->int_no, r->error_code);
+    kprintf("RIP  %016lx  CS   %04lx   RFLAGS %016lx\n", r->rip, r->cs, r->rflags);
+    kprintf("RSP  %016lx  SS   %04lx\n", r->rsp, r->ss);
+    kprintf("RAX  %016lx  RBX  %016lx  RCX  %016lx\n", r->rax, r->rbx, r->rcx);
+    kprintf("RDX  %016lx  RSI  %016lx  RDI  %016lx\n", r->rdx, r->rsi, r->rdi);
+    kprintf("RBP  %016lx  R8   %016lx  R9   %016lx\n", r->rbp, r->r8, r->r9);
+    kprintf("R10  %016lx  R11  %016lx  R12  %016lx\n", r->r10, r->r11, r->r12);
+    kprintf("R13  %016lx  R14  %016lx  R15  %016lx\n", r->r13, r->r14, r->r15);
+    kprintf("CR2  %016lx  CR3  %016lx\n", read_cr2(), read_cr3());
+    kprintf("---[ end Kernel panic - Not Syncing: %s ]---\n", msg);
+
+    for (; ;) __asm__ volatile ("hlt");
+}
+
+extern "C" void interrupt_exception_handler(Registers *r) {
+    panic(r);
 }

@@ -28,7 +28,7 @@ KERNEL_CXXFLAGS := -target x86_64-unknown-elf -std=c++20 \
                    -ffreestanding -fno-exceptions -fno-rtti \
                    -fno-stack-protector -fno-pic -mno-red-zone \
                    -mgeneral-regs-only -nostdlib -DCOMMON_NO_FLOAT \
-                   -Wall -Wextra -MMD -MP $(KERNEL_INCLUDES)
+                   -Wall -Wextra -MMD -MP $(KERNEL_INCLUDES) -g
 
 KERNEL_LDSCRIPT := kernel/linker.ld
 KERNEL_LDFLAGS  := -nostdlib -static -T $(KERNEL_LDSCRIPT)
