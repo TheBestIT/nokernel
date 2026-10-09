@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// masks the value (x) to the previous bound of the mask (a) eg. mask=8: 17 -> 16 
+#define ALIGN_DOWN(x,a) ((x) & ~((uint64_t)(a)-1)) 
+// masks the value (x) to the next bound of the mask (a) eg. mask=8: 17 -> 24
+#define ALIGN_UP(x,a)   (((x) + (a)-1) & ~((uint64_t)(a)-1))
+
 namespace math {
     template<typename T> constexpr T abs(T x) { return (x < 0) ? -x : x; }
 

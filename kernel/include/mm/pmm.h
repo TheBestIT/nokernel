@@ -2,11 +2,24 @@
 #define PMM_H
 
 #include "lib/common/include/memory.h"
+#include "shared/boot/efimdesc.h"
 #include "shared/boot/info.h"
+#include "kernel/include/console.h"
+#include "lib/common/include/stdlib.h"
+#include "lib/common/include/math.h"
+
+#define ALLOCATABLE_MEMORY_TYPES 1
 
 // Physical Memory Manager
 namespace PMM {
     constexpr size_t FRAME_SIZE = 4096;
+    constexpr EFI_MEMORY_TYPE AllocatableMemoryTypes[ALLOCATABLE_MEMORY_TYPES] = { 
+        // EFI_MEMORY_TYPE::EfiLoaderCode,
+        // EFI_MEMORY_TYPE::EfiLoaderData,
+        // EFI_MEMORY_TYPE::EfiBootServicesCode,
+        // EFI_MEMORY_TYPE::EfiBootServicesData,
+        EFI_MEMORY_TYPE::EfiConventionalMemory
+    };
 
     void init(const bootinfo_t *bootInfo);
 

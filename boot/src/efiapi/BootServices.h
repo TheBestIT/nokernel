@@ -2,6 +2,7 @@
 #define BOOTSERVICES_H
 
 #include "Base.h"
+#include "shared/boot/efimdesc.h"
 
 // From UEFI Spec 7.3.9: EFI_BOOT_SERVICES.OpenProtocol()
 typedef EFI_STATUS (*EFI_OPEN_PROTOCOL)(
@@ -45,39 +46,11 @@ typedef EFI_STATUS (*EFI_STALL) (
 );
 
 typedef enum {
-    EfiReservedMemoryType,
-    EfiLoaderCode,
-    EfiLoaderData,
-    EfiBootServicesCode,
-    EfiBootServicesData,
-    EfiRuntimeServicesCode,
-    EfiRuntimeServicesData,
-    EfiConventionalMemory,
-    EfiUnusableMemory,
-    EfiACPIReclaimMemory,
-    EfiACPIMemoryNVS,
-    EfiMemoryMappedIO,
-    EfiMemoryMappedIOPortSpace,
-    EfiPalCode,
-    EfiPersistentMemory,
-    EfiUnacceptedMemoryType,
-    EfiMaxMemoryType
-} EFI_MEMORY_TYPE;
-
-typedef enum {
     AllocateAnyPages,
     AllocateMaxAddress,
     AllocateAddress,
     MaxAllocateType
 } EFI_ALLOCATE_TYPE;
-
-typedef struct {
-    uint32_t                Type;
-    EFI_PHYSICAL_ADDRESS    PhysicalStart;
-    EFI_VIRTUAL_ADDRESS     VirtualStart;
-    UINTN                   NumberOfPages;
-    UINTN                   Attribute;
-} EFI_MEMORY_DESCRIPTOR;
 
 // 7.2.1: EFI_BOOT_SERVICES.AllocatePages()
 typedef EFI_STATUS (*EFI_ALLOCATE_PAGES) (

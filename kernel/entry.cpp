@@ -7,8 +7,10 @@
 #include "include/console.h"
 #include "include/arch/x86_64/arch.h"
 
+#include "include/mm/pmm.h"
+
 #define COM1 0x3F8
-#define KERNEL_VERSION "0.0.2-PRE"
+#define KERNEL_VERSION "0.0.3-PRE"
 
 extern "C" [[noreturn]] void _start(bootinfo_t *bootInfo) {
     auto outb = [](uint16_t p, uint8_t v) {
@@ -34,6 +36,24 @@ extern "C" [[noreturn]] void _start(bootinfo_t *bootInfo) {
     uint16_t cs;
     __asm__ volatile("movw %%cs, %0" : "=r"(cs)); // moves the content of %cs to cs
     kprintf("The index of the 'cs' register is %#x\n", cs);
+
+    PMM::init(bootInfo);
+
+    size_t before = PMM::free_count();
+    PhysAddress a = PMM::alloc_frame();
+    PhysAddress b = PMM::alloc_frame();
+    Mem::memset((void*)a, 0xFC, PMM::FRAME_SIZE);
+    kprintf("a=%#lx b=%#lx free=%lu\n", a, b, PMM::free_count());
+
+    PMM::free_frame(a);
+    PhysAddress c = PMM::alloc_frame();
+    PhysAddress d = PMM::alloc_frames(4);
+    kprintf("c=%#lx d=%#lx\n", c, d);
+
+    PMM::free_frames(d, 4);
+    PMM::free_frame(b);
+    PMM::free_frame(c);
+    kprintf("free=%lu before=%lu\n", PMM::free_count(), before);
 
     for (;;) __asm__ volatile ("hlt");
 }

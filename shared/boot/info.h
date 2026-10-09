@@ -5,6 +5,7 @@
 
 #include "framebuffer.h"
 #include "shared/libs/bitmap.h"
+#include "efimdesc.h"
 
 typedef struct {
     uint64_t magic;
@@ -12,7 +13,7 @@ typedef struct {
     uint32_t size;              /* sizeof(bootinfo_t) */
 
     /* memory */
-    uint64_t mmap;              /* EFI_MEMORY_DESCRIPTOR * */
+    EFI_MEMORY_DESCRIPTOR *mmap;              /* EFI_MEMORY_DESCRIPTOR * */
     uint64_t mmap_size;
     uint64_t desc_size;
     uint32_t desc_ver;
