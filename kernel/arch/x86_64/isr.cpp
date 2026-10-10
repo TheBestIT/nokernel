@@ -133,6 +133,18 @@ static inline uint64_t read_cr3() {
     
     const char *msg = r->int_no < 32 ? ExceptionMessages[r->int_no] : "Unknown";
     kprintf("\nKernel panic - Not Syncing: %s (vector %lu, error %#lx)\n", msg, r->int_no, r->error_code);
+
+    if (r->int_no == 14) {
+        uint64_t e = r->error_code;
+        kprintf("Page Fault: %s, %s, %s mode%s%s\n",
+            e & 1  ? "protection" : "not present",
+            e & 2  ? "write" : "read",
+            e & 4  ? "user" : "kernel",
+            e & 8  ? ", reserved bit" : "",
+            e & 16 ? ", execute" : ""
+        );
+    }
+
     kprintf("RIP  %016lx  CS   %04lx   RFLAGS %016lx\n", r->rip, r->cs, r->rflags);
     kprintf("RSP  %016lx  SS   %04lx\n", r->rsp, r->ss);
     kprintf("RAX  %016lx  RBX  %016lx  RCX  %016lx\n", r->rax, r->rbx, r->rcx);

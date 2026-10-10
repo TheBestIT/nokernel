@@ -64,8 +64,6 @@ void PMM::init(const bootinfo_t *bootInfo) {
 
     reserve((PhysAddress)bitmap, bitmapFrames);
     reserve(0, 1);
-
-    kprintf("Allocated the Memory Bitmap at address: %#lx.\nTotal Frames: %lu; Free: %lu; Used: %lu (%lu%%)\n", (PhysAddress)bitmap, totalFrames, freeFrames, totalFrames-freeFrames, (totalFrames-freeFrames) * 100 / totalFrames);
 }
 
 

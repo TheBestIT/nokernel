@@ -13,7 +13,7 @@ void Framebuffer::draw(uint32_t x, uint32_t y, uint32_t RGBD) {
 }
 
 void Framebuffer::fill(uint32_t RGBD) {
-    Mem::uint32_memset(this->fb, RGBD, this->fbDescriptor->size);
+    Mem::uint32_memset(this->fb, RGBD, this->fbDescriptor->size / 4);
 }
 
 uint32_t Framebuffer::getHeight() {

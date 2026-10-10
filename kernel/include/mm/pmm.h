@@ -4,7 +4,6 @@
 #include "lib/common/include/memory.h"
 #include "shared/boot/efimdesc.h"
 #include "shared/boot/info.h"
-#include "kernel/include/console.h"
 #include "lib/common/include/stdlib.h"
 #include "lib/common/include/math.h"
 
