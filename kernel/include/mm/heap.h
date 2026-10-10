@@ -18,14 +18,11 @@ namespace Heap {
     constexpr size_t HEAP_MAX_PAGES = HEAP_MAX >> 12;
     constexpr size_t HEAP_STEP      = 1 << 20ULL; // 1MiB
 
-
     void  init(VirtAddress start, size_t size);
     void *alloc(size_t size);
     void *calloc(size_t count, size_t size);
     void *realloc(void* ptr, size_t size);
     void  free(void *ptr);
 }
-
-
 
 #endif // HEAP_H

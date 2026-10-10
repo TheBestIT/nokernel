@@ -1,4 +1,5 @@
 #include "mm/pmm.h"
+#include "panic.h"
 
 static uint8_t *bitmap      = nullptr; // holds the state of the frames (FREE, USED)
 static size_t   totalFrames = 0; // 1 frame is PMM::FRAME_SIZE bytes
@@ -50,7 +51,7 @@ void PMM::init(const bootinfo_t *bootInfo) {
         }
     }
 
-    if (bitmap == nullptr) __asm__ volatile ("ud2"); // Kernel Panic - Not Syncing: Invalid Opcode
+    ASSERT(bitmap != nullptr);
 
     Mem::memset(bitmap, 0xFF, bitmapBytes); // sets all frames as used
 

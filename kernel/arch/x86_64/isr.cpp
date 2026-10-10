@@ -1,4 +1,5 @@
 #include "arch/x86_64/isr.h"
+#include "panic.h"
 
 ISR::ISR() {}
 ISR::~ISR() {}
@@ -126,38 +127,42 @@ static inline uint64_t read_cr3() {
 }
 
 // Oops...
-[[noreturn]] void panic(Registers *r) {
+[[noreturn]] void exception_panic(Registers *r) {
     static bool panic = false;
     if (panic) for (; ;) __asm__ volatile ("hlt");
     panic = true;
     
     const char *msg = r->int_no < 32 ? ExceptionMessages[r->int_no] : "Unknown";
-    kprintf("\nKernel panic - Not Syncing: %s (vector %lu, error %#lx)\n", msg, r->int_no, r->error_code);
 
-    if (r->int_no == 14) {
-        uint64_t e = r->error_code;
-        kprintf("Page Fault: %s, %s, %s mode%s%s\n",
-            e & 1  ? "protection" : "not present",
-            e & 2  ? "write" : "read",
-            e & 4  ? "user" : "kernel",
-            e & 8  ? ", reserved bit" : "",
-            e & 16 ? ", execute" : ""
-        );
+    for (int i = 1; i > -1; i--) {
+        keprintf((bool)i, "\nKernel panic - Not Syncing: %s (vector %lu, error %#lx)\n", msg, r->int_no, r->error_code);
+        if (r->int_no == 14) {
+            uint64_t e = r->error_code;
+            keprintf((bool)i, "Page Fault: %s, %s, %s mode%s%s\n",
+                e & 1  ? "protection" : "not present",
+                e & 2  ? "write" : "read",
+                e & 4  ? "user" : "kernel",
+                e & 8  ? ", reserved bit" : "",
+                e & 16 ? ", execute" : ""
+            );
+        }
+
+        keprintf((bool)i, "RIP  %016lx  CS   %04lx   RFLAGS %016lx\n", r->rip, r->cs, r->rflags);
+        keprintf((bool)i, "RSP  %016lx  SS   %04lx\n", r->rsp, r->ss);
+        keprintf((bool)i, "RAX  %016lx  RBX  %016lx  RCX  %016lx\n", r->rax, r->rbx, r->rcx);
+        keprintf((bool)i, "RDX  %016lx  RSI  %016lx  RDI  %016lx\n", r->rdx, r->rsi, r->rdi);
+        keprintf((bool)i, "RBP  %016lx  R8   %016lx  R9   %016lx\n", r->rbp, r->r8, r->r9);
+        keprintf((bool)i, "R10  %016lx  R11  %016lx  R12  %016lx\n", r->r10, r->r11, r->r12);
+        keprintf((bool)i, "R13  %016lx  R14  %016lx  R15  %016lx\n", r->r13, r->r14, r->r15);
+        keprintf((bool)i, "CR2  %016lx  CR3  %016lx\n", read_cr2(), read_cr3());
+        keprintf((bool)i, "---[ end Kernel panic - Not Syncing: %s ]---\n", msg);
     }
 
-    kprintf("RIP  %016lx  CS   %04lx   RFLAGS %016lx\n", r->rip, r->cs, r->rflags);
-    kprintf("RSP  %016lx  SS   %04lx\n", r->rsp, r->ss);
-    kprintf("RAX  %016lx  RBX  %016lx  RCX  %016lx\n", r->rax, r->rbx, r->rcx);
-    kprintf("RDX  %016lx  RSI  %016lx  RDI  %016lx\n", r->rdx, r->rsi, r->rdi);
-    kprintf("RBP  %016lx  R8   %016lx  R9   %016lx\n", r->rbp, r->r8, r->r9);
-    kprintf("R10  %016lx  R11  %016lx  R12  %016lx\n", r->r10, r->r11, r->r12);
-    kprintf("R13  %016lx  R14  %016lx  R15  %016lx\n", r->r13, r->r14, r->r15);
-    kprintf("CR2  %016lx  CR3  %016lx\n", read_cr2(), read_cr3());
-    kprintf("---[ end Kernel panic - Not Syncing: %s ]---\n", msg);
+    
 
-    for (; ;) __asm__ volatile ("hlt");
+    halt();
 }
 
 extern "C" void interrupt_exception_handler(Registers *r) {
-    panic(r);
+    exception_panic(r);
 }

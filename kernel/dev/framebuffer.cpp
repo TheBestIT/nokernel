@@ -1,9 +1,10 @@
 #include "dev/framebuffer.h"
+#include "panic.h"
 
-Framebuffer::Framebuffer(bootinfo_t *bootinfo) {
-    this->fbDescriptor = &bootinfo->fb;
+Framebuffer::Framebuffer(framebuffer_t *fbDescriptor) {
+    this->fbDescriptor = fbDescriptor;
     // The UEFI page tables map memory 1:1, so the physical address is also the virtual address.
-    PhysAddress base = bootinfo->fb.base;
+    PhysAddress base = fbDescriptor->base;
     this->fb = (uint32_t*)(VirtAddress)base;
 }
 
@@ -22,4 +23,34 @@ uint32_t Framebuffer::getHeight() {
 
 uint32_t Framebuffer::getWidth() {
     return this->fbDescriptor->width;
+}
+
+bool Framebuffer::copy(Framebuffer *destination, size_t offset) {
+    framebuffer_t *destinationDescriptor = destination->getDescriptor();
+
+    if (destinationDescriptor->size < this->fbDescriptor->size - offset) return false; // copying over would result in a OOB write
+
+    Mem::memcpy((void*)destinationDescriptor->base, (void*)(this->fbDescriptor->base + offset), this->fbDescriptor->size - offset);
+    return true;
+}
+
+// Returns a new allocated *fb with the same sizes as the current fb but its content allocated to 0
+Framebuffer *Framebuffer::clone() {
+    framebuffer_t *clonedFbDescriptor = new framebuffer_t;
+    clonedFbDescriptor->format = this->fbDescriptor->format;
+    clonedFbDescriptor->pitch = this->fbDescriptor->pitch;
+    clonedFbDescriptor->height = this->fbDescriptor->height;
+    clonedFbDescriptor->width = this->fbDescriptor->width;
+    clonedFbDescriptor->size = this->fbDescriptor->size;
+
+    void *ptr = Heap::alloc(clonedFbDescriptor->size);
+    ASSERT(ptr != nullptr);
+    Mem::memset(ptr, 0, clonedFbDescriptor->size);
+    clonedFbDescriptor->base = (VirtAddress)ptr;
+
+    return new Framebuffer(clonedFbDescriptor); // new already asserts ptr != nullptr
+}
+
+framebuffer_t *Framebuffer::getDescriptor() {
+    return this->fbDescriptor;
 }

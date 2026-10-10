@@ -1,4 +1,5 @@
 #include "mm/vmm.h"
+#include "panic.h"
 
 size_t VMM::index(VirtAddress virt, int level) {
     // gets the virtual address and proceeds with those steps:
@@ -88,7 +89,7 @@ void VMM::init(const bootinfo_t *bootInfo) {
     enable_nx();
 
     pml4Phys = PMM::alloc_frame();
-    if (pml4Phys == 0) __asm__ volatile ("ud2"); // Kernel Panic - Not syncing: Invalid Opcode
+    ASSERT(pml4Phys != 0);
     Mem::memset(phys_to_virt(pml4Phys), 0, PMM::FRAME_SIZE);
 
     for (uint64_t offset = 0; offset < bootInfo->mmap_size; offset += bootInfo->desc_size) {

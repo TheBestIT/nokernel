@@ -4,7 +4,7 @@
 #include "idt.h"
 #include "dev/ports.h"
 #include "regs.h"
-#include "console.h"
+#include "dev/console.h"
 
 class IRQ {
     public:

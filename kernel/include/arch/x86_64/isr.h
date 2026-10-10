@@ -6,7 +6,7 @@
 #include "arch/x86_64/idt.h"
 #include "arch/x86_64/regs.h"
 
-#include "console.h"
+#include "dev/console.h"
 
 class ISR {
     public:

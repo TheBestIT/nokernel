@@ -1,6 +1,11 @@
 #include "mm/heap.h"
+#include "panic.h"
 
-void *operator new(size_t size)           { return Heap::alloc(size); }
+void *operator new(size_t size) {
+    void *ptr = Heap::alloc(size);
+    ASSERT(ptr != nullptr);
+    return ptr;
+}
 void  operator delete(void *ptr) noexcept { Heap::free(ptr); }
 
 static VirtAddress HeapStart = 0;
@@ -10,10 +15,18 @@ blockmeta_t *free_list = nullptr;
 void Heap::init(VirtAddress start, size_t size) {
     if (size > HEAP_MAX_PAGES) size = HEAP_MAX_PAGES;
     PhysAddress HeapPhysBase = PMM::alloc_frames(size);
-    if (HeapPhysBase == 0) __asm__ volatile ("ud2"); // Kernel Panic - Not syncing: Invalid Opcode
+    
+    ASSERT(HeapPhysBase != 0);
+
     if (!VMM::map_range(start, HeapPhysBase, size, VMM::Flags::Writable | VMM::Flags::NoExecute)) {
         PMM::free_frames(HeapPhysBase, size);
-        __asm__ volatile ("ud2"); // Kernel Panic - Not syncing: Invalid Opcode
+        PANIC(
+            "Can't map Heap to Virtual Memory. HeapPhysBase=%#x; HeapStart=%#x; HeapSize=%d (%d bytes)",
+            HeapPhysBase,
+            start,
+            size,
+            size * PMM::FRAME_SIZE
+        );
     }
     HeapStart = start;
     HeapEnd = start + (size * PMM::FRAME_SIZE);
@@ -26,7 +39,7 @@ void Heap::init(VirtAddress start, size_t size) {
 }
 
 bool grow(size_t bytes) {
-    size_t pages = ALIGN_UP(bytes, 16) / PMM::FRAME_SIZE;
+    size_t pages = ALIGN_UP(bytes, PMM::FRAME_SIZE) / PMM::FRAME_SIZE;
     if (HeapEnd + pages * PMM::FRAME_SIZE > HeapStart + Heap::HEAP_MAX) return false; // too big
 
     PhysAddress physNewCompound = PMM::alloc_frames(pages);

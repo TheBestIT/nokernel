@@ -1,20 +1,36 @@
-#include "kernel/include/console.h"
+#include "kernel/include/dev/console.h"
 
-Console *g_console = nullptr;
+static Console *s_console = nullptr;
+bool ROUTE_TO_COM = true;
 
 Console::Console(Framebuffer *fb, font_t font) {
     this->fb = fb;
     this->font = font;
+
+    // alloc shadow framebuffer for screen scrolling
+    this->fbShadow = fb->clone();
+}
+
+void Console::scroll() {
+    size_t offset = fb->getDescriptor()->pitch * this->font.CellHeight * 4; // 1 screen line with the current font
+    this->fb->copy(this->fbShadow, offset);
+    this->fb->fill(this->backgroundColor);
+    this->fbShadow->copy(this->fb, 0);
+    this->y -= this->font.CellHeight;
 }
 
 void Console::newline() {
     this->x = 0;
+    if ((this->y + this->font.CellHeight) / this->font.CellHeight > this->fb->getHeight() / this->font.CellHeight) return this->scroll();
     this->y += this->font.CellHeight;
-    if (this->y / this->font.CellHeight > this->fb->getHeight() / this->font.CellHeight) this->clear();
 }
 
 void Console::print_char(char c) {
     if (c == '\n') return this->newline();
+
+    if ((this->y + this->font.CellHeight) / this->font.CellHeight > this->fb->getHeight() / this->font.CellHeight) {
+        this->scroll();
+    }
     
     uint32_t col = (uint8_t)c % this->font.CellsPerXAxis;
     uint32_t row = (uint8_t)c / this->font.CellsPerXAxis;
@@ -44,6 +60,7 @@ void Console::clear() {
     this->x = 0;
     this->y = 0;
     this->fb->fill(this->backgroundColor);
+    this->fbShadow->fill(this->backgroundColor);
 }
 
 void Console::print(const char *str) {
@@ -59,7 +76,22 @@ void Console::setFGColor(uint32_t color) {
     this->foregroundColor = color;
 }
 
+void console_init(Framebuffer *fb, font_t font) {
+    if (s_console != nullptr) return;
+    s_console = new Console(fb, font);
+}
+
+Console &console() {
+    return *s_console;
+}
+
+void serialout(char v, void *arg) {
+    (void)arg;
+    __asm__ volatile ("outb %0,%1" :: "a"((uint8_t)v), "Nd"((uint16_t)COM1));
+};
+
 static void conout(char c, void *arg) {
+    if (ROUTE_TO_COM) serialout(c, NULL);
     ((Console *)arg)->print_char(c);
 }
 
@@ -72,11 +104,13 @@ int kprintf(Console &console, const char *format, ...) {
 }
 
 int kprintf(const char *format, ...) {
-    if (!g_console) return 0;
-
     va_list args;
     va_start(args, format);
-    const int ret = _vfctprintf(conout, g_console, format, args);
+    const int ret = _vfctprintf(conout, &console(), format, args);
     va_end(args);
     return ret;
+}
+
+int kvprintf(const char *format, va_list args) {
+    return _vfctprintf(conout, &console(), format, args);
 }
